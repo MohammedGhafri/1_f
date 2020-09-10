@@ -1,21 +1,25 @@
 import pygame
+
+# from pygame import display
 import neat
 import os
 import random
 import time
 # os.environ['SDL_VIDEODRIVER']='windlib'
 # os.environ['SDL_VIDEODRIVER']='windlib'
-os.environ["SDL_VIDEODRIVER"] = "dummy"
+# os.environ["SDL_VIDEODRIVER"] = "dummy"
+pygame.init()
+pygame.display.list_modes()
 
 
 
 WIN_WIDTH=600
 WIN_HEIGHT=800
 
-BIRD_IMGS=[pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird1.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird2.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird3.png")))]
-PIP_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.png")))
-BASE_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.png")))
-BG_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bg.png")))
+BIRD_IMGS=[pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird1.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird2.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird3.png")))]
+PIP_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","pipe.png")))
+BASE_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","base.png")))
+BG_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bg.png")))
 
 
 class Bird:
@@ -33,7 +37,7 @@ class Bird:
         self.height = self.y
         self.img_count = 0
         self.img = self.IMGS[0]
-    
+
     def jump(self):
         self.vel = -10.5
         self.tick_count= 0
@@ -46,7 +50,7 @@ class Bird:
 
         if d >= 16:
             d = 16
-        
+
         if d < 0:
             d -= 2
 
@@ -86,19 +90,24 @@ class Bird:
     def get_mask(self):
         return pygame.mask.from_surface(self.img)
 
-    
+
 def draw_window(win,bird):
+    # screen = pygame.display.set_mode((400, 300))
+    # pygame.draw.circle(screen, (0,0,0), (25,25),25)
+    # print("dvdgd")
     win.blit(BG_IMG, (0,0))
     bird.draw(win)
     pygame.display.update()
 
 def main():
     bird = Bird(200,200)
+    # print("mnmnmn")
     # try:
     #     os.environ["DISPLAY"]
     # except:
     #     os.environ["SDL_VIDEODRIVER"] = "dummy"
     win=pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+
 
     run =True
     while run:
@@ -106,14 +115,28 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
         draw_window(win,bird)
+        # print("kjkjkjkjk")
 
     pygame.quit()
     quit()
-# pygame.init()
-# pygame.display.list_modes()
+
 if __name__ == "__main__":
-    pygame.init()
-    pygame.display.list_modes()
+    # import pygame
+    # import os
+    # os.environ["SDL_VIDEODRIVER"] = "dummy"
+    """
+    This from PYCHARMA
+    """
+
+
+    # pygame.init()
+    # pygame.display.list_modes()
+    # print("mmmmmmmmmmmmm")
     main()
-    pass
+    print("THIS FROM PYCHARMA")
+    # from pygame.locals import *
+    # screen = pygame.display.set_mode((400, 300))
+    # pygame.draw.circle(screen, (0,0,0), (25,25),25)
+
+
 
