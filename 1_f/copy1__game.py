@@ -14,8 +14,8 @@ pygame.init()
 pygame.display.list_modes()
 
 
-GEN =0
-WIN_WIDTH=600
+
+WIN_WIDTH=500
 WIN_HEIGHT=800
 
 BIRD_IMGS=[pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird1.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird2.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird3.png")))]
@@ -89,7 +89,6 @@ class Bird:
         rotated_image= pygame.transform.rotate(self.img,self.tilt)
         new_rect = rotated_image.get_rect(center=self.img.get_rect(topleft = (self.x,self.y)).center)
         win.blit(rotated_image,new_rect.topleft)
-        print(win)
 
     def get_mask(self):
         return pygame.mask.from_surface(self.img)
@@ -105,7 +104,7 @@ class Pipe:
 
         self.top=0
         self.bottom=0
-        self.PIPE_TOP=pygame.transform.flip(PIP_IMG,False, True)
+        self.PIP_TOP=pygame.transform.flip(PIP_IMG,False, True)
         self.PIP_BOTTOM =PIP_IMG
 
         self.passed = False
@@ -113,20 +112,19 @@ class Pipe:
 
     def set_height(self):
         self.height = random.randrange(50,450)
-        self.top = self.height - self.PIPE_TOP.get_height()
+        self.top = self.height - self.PIP_TOP.get_height()
         self.bottom=self.height + self.GAP
 
     def move(self):
         self.x -= self.VEL
 
     def draw(self, win):
-        # print(win)
-        win.blit(self.PIPE_TOP,(self.x,self.top))
+        win.blit(self.PIP_TOP,(self.x,self.top))
         win.blit(self.PIP_BOTTOM,(self.x,self.bottom))
 
-    def collide(self, bird ,win):
+    def collide(self, bird ):
         bird_mask = bird.get_mask()
-        top_mask = pygame.mask.from_surface(self.PIPE_TOP)
+        top_mask = pygame.mask.from_surface(self.PIP_TOP)
         bottom_mask = pygame.mask.from_surface(self.PIP_BOTTOM)
 
         top_offset    = (self.x -bird.x, self.top - round(bird.y))
@@ -165,7 +163,6 @@ class Base:
             self.x2= self.x1 +self.WIDTH
 
     def draw(self,win):
-        
         win.blit(self.IMG,(self.x1,self.y))
         win.blit(self.IMG,(self.x2,self.y))
 
@@ -178,7 +175,7 @@ class Base:
 
 
 
-def draw_window(win,birds,pipes,base,score,gen):
+def draw_window(win,birds,pipes,base,score):
 
     # screen = pygame.display.set_mode((400, 300))
     # pygame.draw.circle(screen, (0,0,0), (25,25),25)
@@ -193,9 +190,6 @@ def draw_window(win,birds,pipes,base,score,gen):
     text = STAT_FONT.render("Score" + str(score),1,(255,255,255))
     win.blit(text,(WIN_WIDTH - 10 -text.get_width(),10))
 
-    text = STAT_FONT.render("Gen" + str(score),1,(255,255,255))
-    win.blit(text,(10,10))
-
     base.draw(win)
     for bird in birds:
         bird.draw(win)
@@ -204,8 +198,6 @@ def draw_window(win,birds,pipes,base,score,gen):
 # eval_genome, fitness function
 def main(genomes,config):
     # bird = Bird(230,350)
-    global GEN
-    GEN += 1
     nets = []
     ge =[]
     birds = []
@@ -232,68 +224,73 @@ def main(genomes,config):
 
     score =0
     run =True
-    while run and len(birds) > 0:
+    while run:
         clock.tick(30)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
                 quit()
-                break
+        # bird.move()
 
-        pipe_ind = 0
+        # - if there are more than pipe * NOT SURE * 
+        pipe_ind= 0
         if len(birds) > 0:
-            if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():  # determine whether to use the first or second
-                pipe_ind = 1                                                                 # pipe on the screen for neural network input
+            if len(pipes) > 1 and birds [0].x > pipes[0].x + pipes[0].PIP_TOP.get_width():
+                pipe_ind = 1
+        else:
+            run =False
+            break
 
-        for x, bird in enumerate(birds):  # give each bird a fitness of 0.1 for each frame it stays alive
-            ge[x].fitness += 0.1
+        for x,bird in enumerate(birds):
             bird.move()
+            ge[x].fitness +=0.1
 
-            # send bird location, top pipe location and bottom pipe location and determine from network whether to jump or not
-            output = nets[birds.index(bird)].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
-
-            if output[0] > 0.5:  # we use a tanh activation function so result will be between -1 and 1. if over 0.5 jump
+            output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height),abs(bird.y -pipes[pipe_ind].bottom)))
+            if output[0] > 0.5 :
                 bird.jump()
-
-        base.move()
-
-        rem = []
-        add_pipe = False
+        add_pipe= False
+        rem=[]
         for pipe in pipes:
-            pipe.move()
-            # check for collision
-            for bird in birds:
-                if pipe.collide(bird, win):
-                    ge[birds.index(bird)].fitness -= 1
-                    nets.pop(birds.index(bird))
-                    ge.pop(birds.index(bird))
-                    birds.pop(birds.index(bird))
 
-            if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+            for x,bird in enumerate(birds):
+                ge[x].fitness -=1
+                # birds.remove(bird)
+                birds.pop(x)
+                nets.pop(x)
+                ge.pop(x)
+
+
+                if pipe.collide(bird):
+                    pass
+
+                if not pipe.passed and pipe.x < bird.x:
+                    pipe.passed= True
+                    add_pipe = True
+            if pipe.x + pipe.PIP_TOP.get_width() <0:
                 rem.append(pipe)
 
-            if not pipe.passed and pipe.x < bird.x:
-                pipe.passed = True
-                add_pipe = True
+            pipe.move()
 
         if add_pipe:
-            score += 1
-            # can add this line to give more reward for passing through a pipe (not required)
-            for genome in ge:
-                genome.fitness += 5
-            pipes.append(Pipe(WIN_WIDTH))
+            score +=1
+            for g in ge:
+                g.fitness +=5
+            pipes.append(Pipe(600))
 
-        for r in rem:
+        for r in rem :
             pipes.remove(r)
+        
+        for x,bird in enumerate(birds):
 
-        for bird in birds:
-            if bird.y + bird.img.get_height() - 10 >= 730 or bird.y < -50:
-                nets.pop(birds.index(bird))
-                ge.pop(birds.index(bird))
-                birds.pop(birds.index(bird))
-        draw_window(win,birds,pipes, base,score,GEN)
+            if bird.y +bird.img.get_height() >= 730 or bird.y < 0:
+                birds.pop(x)
+                nets.pop(x)
+                ge.pop(x)
+
+
+        base.move()
+        draw_window(win,birds,pipes, base,score)
 
         # print("kjkjkjkjk")
 
