@@ -5,6 +5,8 @@ import neat
 import os
 import random
 import time
+
+pygame.font.init()
 # os.environ['SDL_VIDEODRIVER']='windlib'
 # os.environ['SDL_VIDEODRIVER']='windlib'
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
@@ -13,7 +15,7 @@ pygame.display.list_modes()
 
 
 
-WIN_WIDTH=600
+WIN_WIDTH=500
 WIN_HEIGHT=800
 
 BIRD_IMGS=[pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird1.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird2.png"))),pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bird3.png")))]
@@ -21,6 +23,7 @@ PIP_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","pipe.
 BASE_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","base.png")))
 BG_IMG=pygame.transform.scale2x(pygame.image.load(os.path.join("../imgs","bg.png")))
 
+STAT_FONT = pygame.font.SysFont("comicsans",50)
 
 class Bird:
     IMGS = BIRD_IMGS
@@ -90,32 +93,156 @@ class Bird:
     def get_mask(self):
         return pygame.mask.from_surface(self.img)
 
+class Pipe:
+    GAP=200
+    VEL=5 
 
-def draw_window(win,bird):
+    def __init__(self,x):
+        self.x=x
+        self.height = 0
+        # self.gap =100
+
+        self.top=0
+        self.bottm=0
+        self.PIP_TOP=pygame.transform.flip(PIP_IMG,False, True)
+        self.PIP_BOTTOM =PIP_IMG
+
+        self.passed = False
+        self.set_height()
+
+    def set_height(self):
+        self.height = random.randrange(50,450)
+        self.top = self.height - self.PIP_TOP.get_height()
+        self.bottom=self.height + self.GAP
+
+    def move(self):
+        self.x -= self.VEL
+
+    def draw(self, win):
+        win.blit(self.PIP_TOP,(self.x,self.top))
+        win.blit(self.PIP_BOTTOM,(self.x,self.bottom))
+
+    def collide(self, bird ):
+        bird_mask = bird.get_mask()
+        top_mask = pygame.mask.from_surface(self.PIP_TOP)
+        bottom_mask = pygame.mask.from_surface(self.PIP_BOTTOM)
+
+        top_offset    = (self.x -bird.x, self.top - round(bird.y))
+        bottom_offset = self.x - bird.x, self.bottm - round(bird.y)
+
+        b_point = bird_mask.overlap(bottom_mask,bottom_offset) # bottom point
+
+        t_point = bird_mask.overlap(top_mask,top_offset) # top point
+
+        # check for collision
+        if t_point or b_point:
+            return True
+        else:
+            return False
+
+
+
+class Base:
+    VEL = 5
+    WIDTH = BASE_IMG.get_width()
+    IMG = BASE_IMG
+
+    def __init__(self,y):
+        self.y=y
+        self.x1 =0
+        self.x2 =self.WIDTH
+
+    def move(self):
+        self.x1 -=self.VEL
+        self.x2 -=self.VEL
+
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 +self.WIDTH
+
+        if self.x2 +self.WIDTH <0:
+            self.x2= self.x1 +self.WIDTH
+
+    def draw(self,win):
+        win.blit(self.IMG,(self.x1,self.y))
+        win.blit(self.IMG,(self.x2,self.y))
+
+
+
+
+
+
+
+
+
+
+def draw_window(win,bird,pipes,base,score):
+
     # screen = pygame.display.set_mode((400, 300))
     # pygame.draw.circle(screen, (0,0,0), (25,25),25)
     # print("dvdgd")
+
+
     win.blit(BG_IMG, (0,0))
+    for pipe in pipes:
+        pipe.draw(win)
+
+    text = STAT_FONT.render("Score" + str(score),1,(255,255,255))
+    win.blit(text,(WIN_WIDTH - 10 -text.get_width(),10))
+
+    base.draw(win)
     bird.draw(win)
     pygame.display.update()
 
 def main():
-    bird = Bird(200,200)
+    bird = Bird(230,350)
+    base=Base(730)
+    pipes=[Pipe(600)]
+
     # print("mnmnmn")
     # try:
     #     os.environ["DISPLAY"]
     # except:
     #     os.environ["SDL_VIDEODRIVER"] = "dummy"
     win=pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+    clock=pygame.time.Clock()
 
-
+    score =0
     run =True
     while run:
+        clock.tick(30)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-        draw_window(win,bird)
+        # bird.move()
+        add_pipe= False
+        rem=[]
+        for pipe in pipes:
+            if pipe.collide(bird):
+                pass
+
+            if pipe.x + pipe.PIP_TOP.get_width() <0:
+                rem.append(pipe)
+
+            if not pipe.passed and pipe.x < bird.x:
+                pipe.passed= True
+                add_pipe = True
+            pipe.move()
+        if add_pipe:
+            score +=1
+            pipes.append(Pipe(600))
+
+        for r in rem :
+            pipes.remove(r)
+        
+        if bird.y +bird.img.get_height() >= 730:
+            pass
+
+
+        base.move()
+        draw_window(win,bird,pipes, base,score)
+
         # print("kjkjkjkjk")
+
 
     pygame.quit()
     quit()
@@ -125,7 +252,7 @@ if __name__ == "__main__":
     # import os
     # os.environ["SDL_VIDEODRIVER"] = "dummy"
     """
-    This from PYCHARMA
+    This from PYCHARM
     """
 
 
